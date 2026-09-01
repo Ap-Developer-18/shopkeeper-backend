@@ -20,21 +20,19 @@ public class StockService {
     private final ProductRepository productRepository;
     private final CurrentUserService currentUserService;
 
-    public Product addProduct(ProductRequest req) {
-        User shopkeeper = currentUserService.getCurrentUser();
-        Product product = Product.builder()
-                .name(req.getName())
-                .sku(req.getSku())
-                .pricePerUnit(req.getPricePerUnit())
-                .unit(req.getUnit())
-                .stockQuantity(req.getStockQuantity())
-                .lowStockThreshold(req.getLowStockThreshold() != null ? req.getLowStockThreshold() : 5)
-                .shopkeeper(shopkeeper)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-        return productRepository.save(product);
-    }
+ public Product addProduct(ProductRequest req) {
+    User shopkeeper = currentUserService.getCurrentUser();
+    Product product = Product.builder()
+            .name(req.getName())
+            .sku(req.getSku())
+            .pricePerUnit(req.getPricePerUnit())
+            .unit(req.getUnit())
+            .stockQuantity(req.getStockQuantity())
+            .lowStockThreshold(req.getLowStockThreshold() != null ? req.getLowStockThreshold() : 5)
+            .shopkeeper(shopkeeper)
+            .build();
+    return productRepository.save(product);
+}
 
     @Transactional(readOnly = true)
     public List<Product> listAll() {
