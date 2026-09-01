@@ -30,7 +30,7 @@ public class TwilioNotificationService implements NotificationService {
             if (isConfigured()) {
                 Twilio.init(accountSid, authToken);
             } else {
-                log.warn("Twilio credentials not configured - running in stub mode.");
+                log.warn("Running in STUB mode (No Twilio configured).");
             }
         } catch (Exception e) {
             log.error("Failed to initialize Twilio: {}", e.getMessage());
@@ -39,11 +39,11 @@ public class TwilioNotificationService implements NotificationService {
 
     @Override
     public void sendSms(String toPhone, String body) {
+        if (!isConfigured()) {
+            System.out.println("[SMS-STUB] to=" + toPhone + " | " + body);
+            return;
+        }
         try {
-            if (!isConfigured()) {
-                log.info("[SMS-STUB] to={} | MESSAGE: {}", toPhone, body);
-                return;
-            }
             Message.creator(new PhoneNumber(toPhone), new PhoneNumber(smsFromNumber), body).create();
         } catch (Exception e) {
             log.error("Failed to send SMS: {}", e.getMessage());
@@ -52,11 +52,11 @@ public class TwilioNotificationService implements NotificationService {
 
     @Override
     public void sendWhatsApp(String toPhone, String body) {
+        if (!isConfigured()) {
+            System.out.println("[WHATSAPP-STUB] to=" + toPhone + " | " + body);
+            return;
+        }
         try {
-            if (!isConfigured()) {
-                log.info("[WHATSAPP-STUB] to={} | MESSAGE: {}", toPhone, body);
-                return;
-            }
             Message.creator(
                     new PhoneNumber("whatsapp:" + normalizeToE164(toPhone)),
                     new PhoneNumber(whatsappFromNumber),
@@ -76,7 +76,6 @@ public class TwilioNotificationService implements NotificationService {
     @Override
     public void sendOtp(String toPhone, String otp, String purpose) {
         String body = "Your OTP is " + otp + ". Valid for 5 minutes.";
-        log.info("Dispatching OTP for purpose={} to={}", purpose, toPhone);
         sendSms(toPhone, body);
         sendWhatsApp(toPhone, body);
     }
