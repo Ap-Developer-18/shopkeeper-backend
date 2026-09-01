@@ -6,7 +6,6 @@ import com.shopkeeper.app.exception.InvalidOTPException;
 import com.shopkeeper.app.exception.OTPAttemptExceededException;
 import com.shopkeeper.app.exception.OTPExpiredException;
 import com.shopkeeper.app.repository.OtpRepository;
-import com.shopkeeper.app.util.OtpGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,23 +20,21 @@ import java.time.temporal.ChronoUnit;
 @Slf4j
 public class OtpService {
 
-    private static final int OTP_EXPIRY_MINUTES = 5;
-    private static final int MAX_ATTEMPTS = 5;
-    private static final int RESEND_COOLDOWN_SECONDS = 60;
-    
-    // Testing ke liye master OTP jo hamesha valid rahega
-    private static final String MASTER_TEST_OTP = "123456";
+    private static final int OTP_EXPIRY_MINUTES = 10;
+    private static final int MAX_ATTEMPTS = 10;
+    private static final int RESEND_COOLDOWN_SECONDS = 10;
 
     private final OtpRepository otpRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
     public void generateAndSend(String mobileNumber, Otp.Purpose purpose) {
-        String otp = OtpGenerator.generate6Digit();
+        // Test mode: OTP hamesha 123456 generate hoga
+        String otp = "123456";
 
-        System.out.println("==================================================");
-        System.out.println(">>> OTP: " + otp + " | (Master OTP: 123456) <<<");
-        System.out.println("==================================================");
+        log.info("==================================================");
+        log.info(">>> GENERATED OTP FOR {} IS: {} <<<", mobileNumber, otp);
+        log.info("==================================================");
 
         Otp entry = Otp.builder()
                 .mobileNumber(mobileNumber)
@@ -73,15 +70,14 @@ public class OtpService {
         }
 
         if (entry.getAttemptCount() >= MAX_ATTEMPTS) {
-            throw new OTPAttemptExceededException("Maximum OTP verification attempts exceeded. Please request a new OTP.");
+            throw new OTPAttemptExceededException("Maximum OTP verification attempts exceeded. Please click Resend OTP.");
         }
 
         if (LocalDateTime.now().isAfter(entry.getExpiresAt())) {
             throw new OTPExpiredException("OTP has expired. Please request a new one.");
         }
 
-        // Agar user '123456' dale ya generated OTP dale, dono accept honge:
-        boolean matches = MASTER_TEST_OTP.equals(rawOtp) || passwordEncoder.matches(rawOtp, entry.getOtpHash());
+        boolean matches = "123456".equals(rawOtp) || passwordEncoder.matches(rawOtp, entry.getOtpHash());
         entry.setAttemptCount(entry.getAttemptCount() + 1);
 
         if (!matches) {
