@@ -1,5 +1,6 @@
 package com.shopkeeper.app.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,7 @@ public class Customer {
     // Owning shopkeeper (multi-tenant support)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shopkeeper_id", nullable = false)
+    @JsonIgnore
     private User shopkeeper;
 
     @Builder.Default
