@@ -30,7 +30,7 @@ public class TwilioNotificationService implements NotificationService {
             if (isConfigured()) {
                 Twilio.init(accountSid, authToken);
             } else {
-                log.warn("Twilio credentials not configured - SMS/WhatsApp notifications are disabled (stub mode).");
+                log.warn("Twilio credentials not configured - running in stub mode.");
             }
         } catch (Exception e) {
             log.error("Failed to initialize Twilio: {}", e.getMessage());
@@ -41,13 +41,12 @@ public class TwilioNotificationService implements NotificationService {
     public void sendSms(String toPhone, String body) {
         try {
             if (!isConfigured()) {
-                // Ab Stub mode me message body (OTP) print hoga:
-                log.info("[SMS-STUB] to={} | message: {}", toPhone, body);
+                log.info("[SMS-STUB] to={} | MESSAGE: {}", toPhone, body);
                 return;
             }
             Message.creator(new PhoneNumber(toPhone), new PhoneNumber(smsFromNumber), body).create();
         } catch (Exception e) {
-            log.error("Failed to send SMS to {}: {}", toPhone, e.getMessage());
+            log.error("Failed to send SMS: {}", e.getMessage());
         }
     }
 
@@ -55,8 +54,7 @@ public class TwilioNotificationService implements NotificationService {
     public void sendWhatsApp(String toPhone, String body) {
         try {
             if (!isConfigured()) {
-                // Ab Stub mode me message body (OTP) print hoga:
-                log.info("[WHATSAPP-STUB] to={} | message: {}", toPhone, body);
+                log.info("[WHATSAPP-STUB] to={} | MESSAGE: {}", toPhone, body);
                 return;
             }
             Message.creator(
@@ -65,7 +63,7 @@ public class TwilioNotificationService implements NotificationService {
                     body
             ).create();
         } catch (Exception e) {
-            log.error("Failed to send WhatsApp message to {}: {}", toPhone, e.getMessage());
+            log.error("Failed to send WhatsApp: {}", e.getMessage());
         }
     }
 
@@ -77,8 +75,8 @@ public class TwilioNotificationService implements NotificationService {
 
     @Override
     public void sendOtp(String toPhone, String otp, String purpose) {
-        String body = "Your OTP is " + otp + ". It is valid for 5 minutes. Do not share this with anyone.";
-        log.info("Dispatching OTP for purpose={} to {}", purpose, toPhone);
+        String body = "Your OTP is " + otp + ". Valid for 5 minutes.";
+        log.info("Dispatching OTP for purpose={} to={}", purpose, toPhone);
         sendSms(toPhone, body);
         sendWhatsApp(toPhone, body);
     }
@@ -89,6 +87,6 @@ public class TwilioNotificationService implements NotificationService {
 
     private String normalizeToE164(String phone) {
         if (phone.startsWith("+")) return phone;
-        return "+91" + phone; // default India country code
+        return "+91" + phone;
     }
 }
