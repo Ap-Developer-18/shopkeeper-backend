@@ -9,6 +9,7 @@ import com.shopkeeper.app.repository.OtpRepository;
 import com.shopkeeper.app.util.OtpGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,12 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+/**
+ * Handles OTP lifecycle: generation, hashed storage, expiry, retry-limit and
+ * resend-cooldown enforcement. The raw OTP value is only ever held in memory
+ * long enough to hash it and hand it to NotificationService - it is never
+ * persisted or logged in plaintext.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -29,14 +36,9 @@ public class OtpService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
-    /** Generates, stores (hashed), and dispatches a new OTP */
+    /** Generates, stores (hashed), and dispatches a new OTP - invalidating any prior unverified one. */
     public void generateAndSend(String mobileNumber, Otp.Purpose purpose) {
         String otp = OtpGenerator.generate6Digit();
-
-        // Testing ke liye plain OTP console par print:
-        log.info("==================================================");
-        log.info(">>> TEST OTP FOR [{}] ({}) IS: [{}] <<<", mobileNumber, purpose, otp);
-        log.info("==================================================");
 
         Otp entry = Otp.builder()
                 .mobileNumber(mobileNumber)
@@ -49,6 +51,7 @@ public class OtpService {
 
         otpRepository.save(entry);
         notificationService.sendOtp(mobileNumber, otp, purpose.name());
+        log.info("OTP generated for purpose={} (mobile number withheld from logs)", purpose);
     }
 
     /** Enforces the 60-second resend cooldown, then invalidates the old OTP and issues a new one. */
