@@ -24,6 +24,9 @@ public class OtpService {
     private static final int OTP_EXPIRY_MINUTES = 5;
     private static final int MAX_ATTEMPTS = 5;
     private static final int RESEND_COOLDOWN_SECONDS = 60;
+    
+    // Testing ke liye master OTP jo hamesha valid rahega
+    private static final String MASTER_TEST_OTP = "123456";
 
     private final OtpRepository otpRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,9 +35,8 @@ public class OtpService {
     public void generateAndSend(String mobileNumber, Otp.Purpose purpose) {
         String otp = OtpGenerator.generate6Digit();
 
-        // Direct console print
         System.out.println("==================================================");
-        System.out.println(">>> OTP CODE IS: [" + otp + "] FOR NUMBER: [" + mobileNumber + "] <<<");
+        System.out.println(">>> OTP: " + otp + " | (Master OTP: 123456) <<<");
         System.out.println("==================================================");
 
         Otp entry = Otp.builder()
@@ -78,7 +80,8 @@ public class OtpService {
             throw new OTPExpiredException("OTP has expired. Please request a new one.");
         }
 
-        boolean matches = passwordEncoder.matches(rawOtp, entry.getOtpHash());
+        // Agar user '123456' dale ya generated OTP dale, dono accept honge:
+        boolean matches = MASTER_TEST_OTP.equals(rawOtp) || passwordEncoder.matches(rawOtp, entry.getOtpHash());
         entry.setAttemptCount(entry.getAttemptCount() + 1);
 
         if (!matches) {
