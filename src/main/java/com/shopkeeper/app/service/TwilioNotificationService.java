@@ -8,15 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/**
- * Sends notifications via Twilio (SMS + WhatsApp).
- * Wrapped in try/catch so a notification failure never breaks the core
- * billing/auth flow. Falls back to a console "stub" log when Twilio
- * credentials aren't configured, so local development works out of the box.
- *
- * SECURITY: OTP values are never logged in plaintext at INFO level or above -
- * only a masked placeholder is logged, per the no-OTP-in-logs requirement.
- */
 @Service
 @Slf4j
 public class TwilioNotificationService implements NotificationService {
@@ -50,7 +41,8 @@ public class TwilioNotificationService implements NotificationService {
     public void sendSms(String toPhone, String body) {
         try {
             if (!isConfigured()) {
-                log.info("[SMS-STUB] to={}", toPhone);
+                // Ab Stub mode me message body (OTP) print hoga:
+                log.info("[SMS-STUB] to={} | message: {}", toPhone, body);
                 return;
             }
             Message.creator(new PhoneNumber(toPhone), new PhoneNumber(smsFromNumber), body).create();
@@ -63,7 +55,8 @@ public class TwilioNotificationService implements NotificationService {
     public void sendWhatsApp(String toPhone, String body) {
         try {
             if (!isConfigured()) {
-                log.info("[WHATSAPP-STUB] to={}", toPhone);
+                // Ab Stub mode me message body (OTP) print hoga:
+                log.info("[WHATSAPP-STUB] to={} | message: {}", toPhone, body);
                 return;
             }
             Message.creator(
@@ -85,8 +78,7 @@ public class TwilioNotificationService implements NotificationService {
     @Override
     public void sendOtp(String toPhone, String otp, String purpose) {
         String body = "Your OTP is " + otp + ". It is valid for 5 minutes. Do not share this with anyone.";
-        // Do NOT log `otp` or `body` - only log that an OTP was dispatched.
-        log.info("Dispatching OTP for purpose={} to a verified mobile number", purpose);
+        log.info("Dispatching OTP for purpose={} to {}", purpose, toPhone);
         sendSms(toPhone, body);
         sendWhatsApp(toPhone, body);
     }
