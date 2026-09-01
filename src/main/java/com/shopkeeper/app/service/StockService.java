@@ -7,12 +7,14 @@ import com.shopkeeper.app.exception.ApiException;
 import com.shopkeeper.app.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class StockService {
 
     private final ProductRepository productRepository;
@@ -28,15 +30,19 @@ public class StockService {
                 .stockQuantity(req.getStockQuantity())
                 .lowStockThreshold(req.getLowStockThreshold() != null ? req.getLowStockThreshold() : 5)
                 .shopkeeper(shopkeeper)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
         return productRepository.save(product);
     }
 
+    @Transactional(readOnly = true)
     public List<Product> listAll() {
         User shopkeeper = currentUserService.getCurrentUser();
         return productRepository.findByShopkeeperId(shopkeeper.getId());
     }
 
+    @Transactional(readOnly = true)
     public List<Product> lowStockItems() {
         User shopkeeper = currentUserService.getCurrentUser();
         return productRepository.findByShopkeeperId(shopkeeper.getId()).stream()
@@ -44,9 +50,10 @@ public class StockService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public Product getById(Long id) {
         Product p = productRepository.findById(id)
-                .orElseThrow(() -> new ApiException("Product not found"));
+                .orElseThrow(() -> new ApiException("Product not found with id: " + id));
         ensureOwnership(p);
         return p;
     }
@@ -58,7 +65,9 @@ public class StockService {
         p.setPricePerUnit(req.getPricePerUnit());
         p.setUnit(req.getUnit());
         p.setStockQuantity(req.getStockQuantity());
-        if (req.getLowStockThreshold() != null) p.setLowStockThreshold(req.getLowStockThreshold());
+        if (req.getLowStockThreshold() != null) {
+            p.setLowStockThreshold(req.getLowStockThreshold());
+        }
         p.setUpdatedAt(LocalDateTime.now());
         return productRepository.save(p);
     }
@@ -81,8 +90,11 @@ public class StockService {
     }
 
     private void ensureOwnership(Product p) {
+        if (p.getShopkeeper() == null) {
+            return;
+        }
         User current = currentUserService.getCurrentUser();
-        if (!p.getShopkeeper().getId().equals(current.getId())) {
+        if (current != null && current.getId() != null && !p.getShopkeeper().getId().equals(current.getId())) {
             throw new ApiException("Not authorized to access this product");
         }
     }
