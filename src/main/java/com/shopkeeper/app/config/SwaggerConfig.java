@@ -20,7 +20,8 @@ public class SwaggerConfig {
     public OpenAPI shopkeeperOpenAPI() {
         return new OpenAPI()
                 .servers(List.of(
-                        new Server().url("/").description("Default Server URL")
+                        new Server().url("https://shopkeeper-backend-production-8150.up.railway.app").description("Railway Production HTTPS"),
+                        new Server().url("http://localhost:8080").description("Local Development")
                 ))
                 .info(new Info()
                         .title("Shopkeeper App API")
